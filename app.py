@@ -115,10 +115,21 @@ team_strength = df.groupby("home_team")["home_score"].mean()
 df_tunisie["opponent_strength"] = df_tunisie["opponent"].map(team_strength)
 
 # Match en Afrique
+# Tous les pays d'Afrique (CAF)
 africa = [
-    "Tunisia","Morocco","Algeria","Egypt","Senegal","Cameroon",
-    "Libya","Mali","Ghana","Ivory Coast","Nigeria","South Africa"
+    "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi",
+    "Cabo Verde", "Cameroon", "Central African Republic", "Chad",
+    "Comoros", "Republic of the Congo", "Democratic Republic of the Congo",
+    "Ivory Coast", "Djibouti", "Egypt", "Equatorial Guinea", "Eritrea",
+    "Eswatini", "Ethiopia", "Gabon", "Gambia", "Ghana", "Guinea",
+    "Guinea-Bissau", "Kenya", "Lesotho", "Liberia", "Libya", "Madagascar",
+    "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique",
+    "Namibia", "Niger", "Nigeria", "Rwanda", "Sao Tome and Principe",
+    "Senegal", "Seychelles", "Sierra Leone", "Somalia",
+    "South Africa", "South Sudan", "Sudan", "Tanzania", "Togo",
+    "Tunisia", "Uganda", "Zambia", "Zimbabwe"
 ]
+
 def travel_level(country):
     if country == "Tunisia":
         return 0
@@ -334,9 +345,12 @@ elif page == "🤖 Modèle & Prédictions":
         "Date": df_tunisie["date"].iloc[train_size:],
         "Adversaire": df_tunisie["opponent"].iloc[train_size:],
         "Vrai": y_test.replace({0: "Loss", 1: "Draw", 2: "Win"}).values,
-        "Prédit": y_pred.astype(int).astype(str).replace({
-            "0": "Loss", "1": "Draw", "2": "Win"
-        }).values,
+        "Prédit": (
+            pd.Series(y_pred)
+            .astype(int)
+            .replace({0: "Loss", 1: "Draw", 2: "Win"})
+            .values
+        ),
         "Proba_Win": y_proba[:, 2],
     }).reset_index(drop=True)
 
