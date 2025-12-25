@@ -195,13 +195,13 @@ macro_f1 = f1_score(y_test, y_pred, average="macro")
 st.sidebar.title("🇹🇳 Tunisie x Data Science")
 page = st.sidebar.radio(
     "Navigation",
-    ["🏟 Overview", "📊 Performance", "🤖 Modèle & Prédictions", "ℹ️ À propos"],
+    [" Overview", " Performance", " Modèle & Prédictions", "ℹ À propos"],
 )
 
 # =========================
 # PAGE 1 : OVERVIEW
 # =========================
-if page == "🏟 Overview":
+if page == " Overview":
     st.title("🇹🇳 Tunisie – Dashboard Football Dark Mode")
 
     col1, col2, col3, col4 = st.columns(4)
@@ -245,8 +245,8 @@ if page == "🏟 Overview":
 # =========================
 # PAGE 2 : PERFORMANCE
 # =========================
-elif page == "📊 Performance":
-    st.title("📊 Performance de la Tunisie – Vue Data")
+elif page == " Performance":
+    st.title(" Performance de la Tunisie – Vue Data")
 
     # Résultats par année
     df_tunisie["year"] = df_tunisie["date"].dt.year
@@ -310,8 +310,8 @@ elif page == "📊 Performance":
 # =========================
 # PAGE 3 : MODELE & PREDS
 # =========================
-elif page == "🤖 Modèle & Prédictions":
-    st.title("🤖 Modèle prédictif – Tunisie x XGBoost")
+elif page == " Modèle & Prédictions":
+    st.title(" Modèle prédictif – Tunisie x XGBoost")
 
     col1, col2 = st.columns(2)
     col1.metric("Accuracy (test)", f"{acc*100:.1f} %")
@@ -396,7 +396,7 @@ elif page == "🤖 Modèle & Prédictions":
     # =========================
 
     st.markdown("---")
-    st.subheader("🏆 Scénario CAN – Prédiction d’un match à venir")
+    st.subheader(" Scénario CAN – Prédiction d’un match à venir")
 
     # === INTERFACE UTILISATEUR ===
     opponent_future = st.selectbox(
@@ -459,7 +459,7 @@ elif page == "🤖 Modèle & Prédictions":
         label_map_inv = {0: "Défaite", 1: "Nul", 2: "Victoire"}
 
         st.success(
-            f"🔮 **Tunisie vs {opponent_future}** → "
+            f" **Tunisie vs {opponent_future}** → "
             f"**{label_map_inv[pred_future]}**"
         )
 
