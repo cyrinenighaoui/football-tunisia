@@ -391,6 +391,104 @@ elif page == "🤖 Modèle & Prédictions":
     )
     st.plotly_chart(fig_prob, use_container_width=True)
 
+    # =========================
+    # 🔮 PREDICTION MATCH FUTUR (SCENARIO CAN)
+    # =========================
+
+    st.markdown("---")
+    st.subheader("🏆 Scénario CAN – Prédiction d’un match à venir")
+
+    # === INTERFACE UTILISATEUR ===
+    opponent_future = st.selectbox(
+        "Équipe adverse (CAN)",
+        sorted(df_tunisie["opponent"].unique()),
+        key="future_opponent"
+    )
+
+    location_future = st.radio(
+        "Lieu du match",
+        ["Domicile", "Extérieur", "Terrain neutre"],
+        horizontal=True
+    )
+
+    match_type_future = st.radio(
+        "Type de match",
+        ["Officiel (CAN)", "Amical"],
+        horizontal=True
+    )
+
+    # === FEATURES BASEES SUR LES DERNIERS MATCHS CONNUS ===
+    last_matches = df_tunisie.sort_values("date").tail(5)
+
+    form_future = last_matches["win"].mean()
+    attack_5_future = last_matches["goals_scored"].mean()
+    defense_5_future = last_matches["goals_against"].mean()
+
+    is_home_future = 1 if location_future == "Domicile" else 0
+    official_future = 1 if "Officiel" in match_type_future else 0
+
+    opponent_strength_future = team_strength.get(
+        opponent_future,
+        team_strength.mean()
+    )
+
+    h2h_rate_future = h2h.get(
+        opponent_future,
+        df_tunisie["win"].mean()
+    )
+
+    travel_future = travel_level(opponent_future)
+
+    # === DATAFRAME POUR LE MODELE ===
+    future_match = pd.DataFrame([{
+        "is_home": is_home_future,
+        "form": form_future,
+        "official": official_future,
+        "opponent_strength": opponent_strength_future,
+        "travel": travel_future,
+        "attack_5": attack_5_future,
+        "defense_5": defense_5_future,
+        "h2h_rate": h2h_rate_future
+    }])
+
+    # === PREDICTION ===
+    if st.button("⚽ Lancer la prédiction CAN"):
+        proba_future = model.predict_proba(future_match)[0]
+        pred_future = np.argmax(proba_future)
+
+        label_map_inv = {0: "Défaite", 1: "Nul", 2: "Victoire"}
+
+        st.success(
+            f"🔮 **Tunisie vs {opponent_future}** → "
+            f"**{label_map_inv[pred_future]}**"
+        )
+
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Défaite", f"{proba_future[0]*100:.1f} %")
+        col2.metric("Nul", f"{proba_future[1]*100:.1f} %")
+        col3.metric("Victoire", f"{proba_future[2]*100:.1f} %")
+
+        # === GRAPHIQUE DES PROBABILITES ===
+        prob_future_df = pd.DataFrame({
+            "Résultat": ["Défaite", "Nul", "Victoire"],
+            "Probabilité": proba_future
+        })
+
+        fig_future = px.bar(
+            prob_future_df,
+            x="Résultat",
+            y="Probabilité",
+            template="plotly_dark",
+            title="Probabilités estimées – Match CAN"
+        )
+        fig_future.update_layout(
+            yaxis_tickformat=".0%",
+            paper_bgcolor="#050814",
+            plot_bgcolor="#050814",
+            font_color="#F5F5F5",
+        )
+        st.plotly_chart(fig_future, use_container_width=True)
+
 # =========================
 # PAGE 4 : À PROPOS
 # =========================
