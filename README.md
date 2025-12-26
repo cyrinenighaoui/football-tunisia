@@ -2,7 +2,7 @@
 **Tech :** Python, Pandas, XGBoost, Plotly, Streamlit  
         
 **Pipeline :**
-1. Chargement des résultats de matchs internationaux (dataset Kaggle).
+1. Chargement des résultats de matchs internationaux (dataset Kaggle): (https://www.kaggle.com/datasets/oussamalariouch/african-national-football-from-2010-2024)
 2. Filtrage des matchs de la Tunisie (2010).
 3. Feature engineering :
 - Forme récente (5 derniers matchs)
