@@ -34,6 +34,16 @@ st.markdown(
     .metric-label, .metric-value {
         color: #F5F5F5 !important;
     }
+    /* Correction pour l'affichage des emojis dans selectbox */
+    .stSelectbox span {
+        font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Segoe UI', sans-serif !important;
+    }
+    /* Style pour centrer l'image dans la sidebar */
+    .sidebar .stImage {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -44,9 +54,9 @@ st.markdown(
 # =========================
 
 @st.cache_data
-def load_data(path="African-Nations-results.csv"):  # Nouveau nom si tu veux
+def load_data(path="African-Nations-results.csv"):
     df = pd.read_csv(path)
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["date"] = pd.to_datetime(df["date"], dayfirst=True, errors="coerce")
     df = df.dropna(subset=["date"])
     return df
 
@@ -55,7 +65,7 @@ df = load_data()
 # Filtre Tunisie
 df_tunisie = df[(df["home_team"] == "Tunisia") | (df["away_team"] == "Tunisia")].copy()
 df_tunisie["date"] = pd.to_datetime(df_tunisie["date"])
-df_tunisie = df_tunisie[df_tunisie["date"] >= "2010-01-01"].sort_values("date")
+df_tunisie = df_tunisie.sort_values("date")
 df_tunisie.reset_index(drop=True, inplace=True)
 
 # =========================
@@ -113,12 +123,11 @@ df_tunisie["is_home"] = (df_tunisie["home_team"] == "Tunisia").astype(int)
 # Match officiel
 df_tunisie["official"] = (df_tunisie["tournament"] != "Friendly").astype(int)
 
-# Force de l’adversaire (simple proxy : buts marqués moyens à domicile)
+# Force de l'adversaire
 team_strength = df.groupby("home_team")["home_score"].mean()
 df_tunisie["opponent_strength"] = df_tunisie["opponent"].map(team_strength)
 
 # Match en Afrique
-# Tous les pays d'Afrique (CAF)
 africa = [
     "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi",
     "Cabo Verde", "Cameroon", "Central African Republic", "Chad",
@@ -140,8 +149,8 @@ def travel_level(country):
         return 1
     return 2
 
-df_tunisie["in_africa"] = df_tunisie["home_team"].isin(africa).astype(int)
-df_tunisie["travel"] = df_tunisie["home_team"].apply(travel_level)
+df_tunisie["in_africa"] = df_tunisie["opponent"].isin(africa).astype(int)
+df_tunisie["travel"] = df_tunisie["opponent"].apply(travel_level)
 
 # Rolling offensif/défensif
 df_tunisie["attack_5"] = df_tunisie["goals_scored"].shift(1).rolling(5).mean()
@@ -151,8 +160,14 @@ df_tunisie["defense_5"] = df_tunisie["goals_against"].shift(1).rolling(5).mean()
 h2h = df_tunisie.groupby("opponent")["win"].mean()
 df_tunisie["h2h_rate"] = df_tunisie["opponent"].map(h2h)
 
-# Nettoyage : on enlève les premières lignes avec NaN
-df_tunisie = df_tunisie.dropna().reset_index(drop=True)
+# Nettoyage
+df_tunisie["form"] = df_tunisie["form"].fillna(0)
+df_tunisie["attack_5"] = df_tunisie["attack_5"].fillna(df_tunisie["goals_scored"].mean())
+df_tunisie["defense_5"] = df_tunisie["defense_5"].fillna(df_tunisie["goals_against"].mean())
+df_tunisie["h2h_rate"] = df_tunisie["h2h_rate"].fillna(0.5)
+df_tunisie["opponent_strength"] = df_tunisie["opponent_strength"].fillna(df_tunisie["opponent_strength"].mean())
+
+df_tunisie = df_tunisie.reset_index(drop=True)
 
 # =========================
 # 3. MODELE ML (XGBoost)
@@ -195,11 +210,47 @@ macro_f1 = f1_score(y_test, y_pred, average="macro")
 # SIDEBAR NAVIGATION
 # =========================
 
+# Ajouter le drapeau en haut de la sidebar
+st.sidebar.image("https://flagcdn.com/w320/tn.png", width=150)
+
 st.sidebar.title("🇹🇳 Tunisie x Data Science")
 page = st.sidebar.radio(
     "Navigation",
     [" Overview", " Performance", " Modèle & Prédictions", "ℹ À propos"],
 )
+
+# Drapeaux des pays africains
+flags = {
+    "Algeria": "🇩🇿", "Angola": "🇦🇴", "Benin": "🇧🇯", "Botswana": "🇧🇼",
+    "Burkina Faso": "🇧🇫", "Burundi": "🇧🇮", "Cabo Verde": "🇨🇻",
+    "Cameroon": "🇨🇲", "Central African Republic": "🇨🇫", "Chad": "🇹🇩",
+    "Comoros": "🇰🇲", "Republic of the Congo": "🇨🇬",
+    "Democratic Republic of the Congo": "🇨🇩", "Ivory Coast": "🇨🇮",
+    "Djibouti": "🇩🇯", "Egypt": "🇪🇬", "Equatorial Guinea": "🇬🇶",
+    "Eritrea": "🇪🇷", "Eswatini": "🇸🇿", "Ethiopia": "🇪🇹", "Gabon": "🇬🇦",
+    "Gambia": "🇬🇲", "Ghana": "🇬🇭", "Guinea": "🇬🇳",
+    "Guinea-Bissau": "🇬🇼", "Kenya": "🇰🇪", "Lesotho": "🇱🇸",
+    "Liberia": "🇱🇷", "Libya": "🇱🇾", "Madagascar": "🇲🇬",
+    "Malawi": "🇲🇼", "Mali": "🇲🇱", "Mauritania": "🇲🇷",
+    "Mauritius": "🇲🇺", "Morocco": "🇲🇦", "Mozambique": "🇲🇿",
+    "Namibia": "🇳🇦", "Niger": "🇳🇪", "Nigeria": "🇳🇬",
+    "Rwanda": "🇷🇼", "Sao Tome and Principe": "🇸🇹",
+    "Senegal": "🇸🇳", "Seychelles": "🇸🇨",
+    "Sierra Leone": "🇸🇱", "Somalia": "🇸🇴",
+    "South Africa": "🇿🇦", "South Sudan": "🇸🇸",
+    "Sudan": "🇸🇩", "Tanzania": "🇹🇿", "Togo": "🇹🇬",
+    "Tunisia": "🇹🇳", "Uganda": "🇺🇬", "Zambia": "🇿🇲",
+    "Zimbabwe": "🇿🇼"
+}
+
+# Liste des adversaires africains
+opponents_list = sorted(df_tunisie[df_tunisie["opponent"].isin(africa)]["opponent"].unique())
+
+# Créer dictionnaire d'affichage avec drapeaux
+display_names = {}
+for team in opponents_list:
+    flag = flags.get(team, "🏴")
+    display_names[team] = f"{flag} {team}"
 
 # =========================
 # PAGE 1 : OVERVIEW
@@ -240,7 +291,7 @@ if page == " Overview":
         """
         **Highlights :**
         - La Tunisie remporte une majorité de ses matchs depuis 2010.
-        - Les défaites sont relativement rares, mais souvent liées aux matchs à l’extérieur ou aux gros adversaires.
+        - Les défaites sont relativement rares, mais souvent liées aux matchs à l'extérieur ou aux gros adversaires.
         - Ce dashboard sert de base pour analyser la dynamique avant la CAN.
         """
     )
@@ -343,7 +394,7 @@ elif page == " Modèle & Prédictions":
 
     st.markdown("### 🔮 Simulation de prédiction sur un match réel (dans le set de test)")
 
-    # On crée un DataFrame de test lisible
+    # DataFrame de test lisible
     compare_df = pd.DataFrame({
         "Date": df_tunisie["date"].iloc[train_size:],
         "Adversaire": df_tunisie["opponent"].iloc[train_size:],
@@ -399,28 +450,41 @@ elif page == " Modèle & Prédictions":
     # =========================
 
     st.markdown("---")
-    st.subheader(" Scénario CAN – Prédiction d’un match à venir")
-
-    # === INTERFACE UTILISATEUR ===
-    opponent_future = st.selectbox(
+    st.subheader(" Scénario CAN – Prédiction d'un match à venir")
+    
+    # Interface utilisateur avec drapeaux
+    selected_display = st.selectbox(
         "Équipe adverse (CAN)",
-        sorted(df_tunisie["opponent"].unique()),
-        key="future_opponent"
+        options=list(display_names.values()),
+        key="can_match_selector"
     )
-
+    
+    # Extraire le nom réel de l'équipe (sans drapeau)
+    if " " in selected_display:
+        opponent_future = selected_display.split(" ", 1)[1]
+    else:
+        opponent_future = selected_display
+    
+    # Afficher la sélection avec drapeaux
+    flag_tn = "🇹🇳"
+    flag_opponent = flags.get(opponent_future, "🏴")
+    st.write(f"**Match sélectionné :** {flag_tn} Tunisie vs {flag_opponent} {opponent_future}")
+    
     location_future = st.radio(
         "Lieu du match",
         ["Domicile", "Extérieur", "Terrain neutre"],
-        horizontal=True
+        horizontal=True,
+        key="location_future"
     )
 
     match_type_future = st.radio(
         "Type de match",
         ["Officiel (CAN)", "Amical"],
-        horizontal=True
+        horizontal=True,
+        key="match_type_future"
     )
 
-    # === FEATURES BASEES SUR LES DERNIERS MATCHS CONNUS ===
+    # Features basées sur les derniers matchs connus
     last_matches = df_tunisie.sort_values("date").tail(5)
 
     form_future = last_matches["win"].mean()
@@ -442,7 +506,7 @@ elif page == " Modèle & Prédictions":
 
     travel_future = travel_level(opponent_future)
 
-    # === DATAFRAME POUR LE MODELE ===
+    # DataFrame pour le modèle
     future_match = pd.DataFrame([{
         "is_home": is_home_future,
         "form": form_future,
@@ -454,8 +518,8 @@ elif page == " Modèle & Prédictions":
         "h2h_rate": h2h_rate_future
     }])
 
-    # === PREDICTION ===
-    if st.button("⚽ Lancer la prédiction CAN"):
+    # Prédiction
+    if st.button("⚽ Lancer la prédiction CAN", key="predict_button"):
         proba_future = model.predict_proba(future_match)[0]
         pred_future = np.argmax(proba_future)
 
@@ -471,7 +535,7 @@ elif page == " Modèle & Prédictions":
         col2.metric("Nul", f"{proba_future[1]*100:.1f} %")
         col3.metric("Victoire", f"{proba_future[2]*100:.1f} %")
 
-        # === GRAPHIQUE DES PROBABILITES ===
+        # Graphique des probabilités
         prob_future_df = pd.DataFrame({
             "Résultat": ["Défaite", "Nul", "Victoire"],
             "Probabilité": proba_future
@@ -500,7 +564,7 @@ else:
 
     st.markdown(
         """
-        **Projet :** Analyse & prédiction des performances de l’équipe nationale de Tunisie 🇹🇳  
+        **Projet :** Analyse & prédiction des performances de l'équipe nationale de Tunisie 🇹🇳  
         **Tech :** Python, Pandas, XGBoost, Plotly, Streamlit  
         
         **Pipeline :**
@@ -510,11 +574,11 @@ else:
            - Forme récente (5 derniers matchs)
            - Domicile / extérieur
            - Match officiel vs amical
-           - Force de l’adversaire (proxy data)
+           - Force de l'adversaire (proxy data)
            - Rolling offensif / défensif (buts marqués / encaissés)
            - Historique face-à-face (head-to-head win rate)
-        4. Entraînement d’un modèle XGBoost multi-classes (Win / Draw / Loss).
-        5. Évaluation sur les derniers matchs + dashboard interactif dark mode “stade”.
+        4. Entraînement d'un modèle XGBoost multi-classes (Win / Draw / Loss).
+        5. Évaluation sur les derniers matchs + dashboard interactif dark mode "stade".
         
         Ce dashboard peut servir :
         - à illustrer un post LinkedIn pendant la CAN,
