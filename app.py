@@ -42,9 +42,12 @@ st.markdown(
 # =========================
 # 1. CHARGEMENT DES DONNÉES
 # =========================
+
 @st.cache_data
-def load_data(path="results.csv"):
+def load_data(path="African-Nations-results.csv"):  # Nouveau nom si tu veux
     df = pd.read_csv(path)
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"])
     return df
 
 df = load_data()
@@ -52,7 +55,7 @@ df = load_data()
 # Filtre Tunisie
 df_tunisie = df[(df["home_team"] == "Tunisia") | (df["away_team"] == "Tunisia")].copy()
 df_tunisie["date"] = pd.to_datetime(df_tunisie["date"])
-df_tunisie = df_tunisie[df_tunisie["date"] >= "2020-01-01"].sort_values("date")
+df_tunisie = df_tunisie[df_tunisie["date"] >= "2010-01-01"].sort_values("date")
 df_tunisie.reset_index(drop=True, inplace=True)
 
 # =========================
@@ -137,8 +140,8 @@ def travel_level(country):
         return 1
     return 2
 
-df_tunisie["in_africa"] = df_tunisie["country"].isin(africa).astype(int)
-df_tunisie["travel"] = df_tunisie["country"].apply(travel_level)
+df_tunisie["in_africa"] = df_tunisie["home_team"].isin(africa).astype(int)
+df_tunisie["travel"] = df_tunisie["home_team"].apply(travel_level)
 
 # Rolling offensif/défensif
 df_tunisie["attack_5"] = df_tunisie["goals_scored"].shift(1).rolling(5).mean()
@@ -210,7 +213,7 @@ if page == " Overview":
     draws = (df_tunisie["result"] == "Draw").sum()
     losses = (df_tunisie["result"] == "Loss").sum()
 
-    col1.metric("Matchs analysés (2020–2025)", total_matches)
+    col1.metric("Matchs analysés (2010)", total_matches)
     col2.metric("Victoires", wins)
     col3.metric("Nuls", draws)
     col4.metric("Défaites", losses)
@@ -223,7 +226,7 @@ if page == " Overview":
         color=counts.index,
         color_discrete_map={"Win": "#2ecc71", "Draw": "#f1c40f", "Loss": "#e74c3c"},
         hole=0.45,
-        title="Répartition des résultats (2020–2025)",
+        title="Répartition des résultats (2010)",
         template="plotly_dark",
     )
     fig_pie.update_layout(
@@ -236,7 +239,7 @@ if page == " Overview":
     st.markdown(
         """
         **Highlights :**
-        - La Tunisie remporte une majorité de ses matchs depuis 2020.
+        - La Tunisie remporte une majorité de ses matchs depuis 2010.
         - Les défaites sont relativement rares, mais souvent liées aux matchs à l’extérieur ou aux gros adversaires.
         - Ce dashboard sert de base pour analyser la dynamique avant la CAN.
         """
@@ -502,7 +505,7 @@ else:
         
         **Pipeline :**
         1. Chargement des résultats de matchs internationaux (dataset Kaggle).
-        2. Filtrage des matchs de la Tunisie (2020–2025).
+        2. Filtrage des matchs de la Tunisie (2010).
         3. Feature engineering :
            - Forme récente (5 derniers matchs)
            - Domicile / extérieur
